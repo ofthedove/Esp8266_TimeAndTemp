@@ -6,6 +6,12 @@
 #include "SSD1306Wire.h"
 #include <WiFiUdp.h>
 #include <TimeLib.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
+#define DHTPIN            D2
+#define DHTTYPE           DHT22
 
 const char* Ssid = "Shortening";
 const char* Password = "ThiaIsAwesome";
@@ -32,11 +38,13 @@ SSD1306Wire  display(0x3c, D3, D5);
 const char * headerKeys[] = {"date"};
 const size_t numberOfHeaders = 1;
 
+DHT_Unified dht(DHTPIN, DHTTYPE);
+
 void drawConnecting()
 {
   display.setTextAlignment(TEXT_ALIGN_CENTER);
   display.setFont(ArialMT_Plain_24);
-  display.drawString(64, 12, "Connecting");
+  display.drawString(64, 0, "Connecting");
 }
 
 void setup() {
@@ -63,13 +71,15 @@ void setup() {
   Udp.begin(localPort);
   setSyncProvider(getNtpTime);
   setSyncInterval(300);
+
+  dht.begin();
 }
 
 void drawTime(String time)
 {
     display.setTextAlignment(TEXT_ALIGN_CENTER);
     display.setFont(ArialMT_Plain_24);
-    display.drawString(64, 12, time);
+    display.drawString(64, 0, time);
 }
 
 String getFormattedTime()
@@ -101,24 +111,71 @@ void drawTimeNotSet()
 {
   display.setTextAlignment(TEXT_ALIGN_CENTER);
   display.setFont(ArialMT_Plain_24);
-  display.drawString(64, 12, "NTP Error");
+  display.drawString(64, 0, "NTP Error");
+}
+
+void drawTemp(int temp)
+{
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 48, String(temp) + "*F");
+}
+
+void drawTempError()
+{
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 48, "--*F");
+}
+
+void drawHumidity(int humidity)
+{
+  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(128, 48, String(humidity) + "%");
+}
+
+void drawHumidityError()
+{
+  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(128, 48, "--%");
 }
 
 time_t prevDisplay = 0;
 
 void loop() {
+  display.clear();
+
+  
   if (timeStatus() != timeNotSet) {
-    if (now() != prevDisplay) {
-      display.clear();
+    // TODO: Look into partial clearing of display?
+    //if (now() != prevDisplay) {
       drawTime(getFormattedTime());
-      display.display();
-    }
+    //}
   }
   else
   {
     drawTimeNotSet();
   }
 
+  sensors_event_t event;  
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    drawTempError();
+  }
+  else {
+    drawTemp(event.temperature * 9 / 5 + 32);
+  }
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity)) {
+    drawHumidityError();
+  }
+  else {
+    drawHumidity(event.relative_humidity);
+  }
+
+  display.display();
   delay(100);
 }
 
