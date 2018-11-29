@@ -88,11 +88,26 @@ String padTime(int digits)
   return result;
 }
 
+void drawTimeNotSet()
+{
+  display.setTextAlignment(TEXT_ALIGN_CENTER);
+  display.setFont(ArialMT_Plain_24);
+  display.drawString(64, 12, "NTP Error");
+}
+
+time_t prevDisplay = 0;
+
 void loop() {
   if (timeStatus() != timeNotSet) {
-    display.clear();
-    drawTime(getFormattedTime());
-    display.display();
+    if (now() != prevDisplay) {
+      display.clear();
+      drawTime(getFormattedTime());
+      display.display();
+    }
+  }
+  else
+  {
+    drawTimeNotSet();
   }
 
   delay(100);
