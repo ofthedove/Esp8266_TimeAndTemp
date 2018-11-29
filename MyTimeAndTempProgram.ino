@@ -61,33 +61,66 @@ void drawTime(String time)
     display.drawString(64, 12, time);
 }
 
-void loop() {
-  if ((WiFiMulti.run() == WL_CONNECTED)) {
+String getFormattedTime()
+{
+  String timeString = "";
+  
+  time_t t = now();
+  timeString += padTime(hour(t));
+  timeString += ':';
+  timeString += padTime(minute(t));
+  timeString += ':';
+  timeString += padTime(second(t));
+  
+  return timeString;
+}
 
-    HTTPClient http;
-
-    http.begin("http://andrewcombs13.com/clock/");
-    http.collectHeaders(headerKeys, numberOfHeaders);
-    int httpCode = http.GET();
-
-    if (httpCode > 0) {
-      String headerDate = http.header("date");
-      String headerTime = headerDate.substring(17, 25);
-      Serial.printf("Time: ");
-      Serial.println(headerTime);
-
-      display.clear();
-      drawTime(headerTime);
-      display.display();
-    } else {
-      Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-    }
-
-    http.end();
+String padTime(int digits)
+{
+  String result = "";
+  if (digits < 10)
+  {
+    result += '0';
   }
+  result += digits;
+  return result;
+}
 
+void loop() {
+//  if ((WiFiMulti.run() == WL_CONNECTED)) {
+//
+//    HTTPClient http;
+//
+//    http.begin("http://andrewcombs13.com/clock/");
+//    http.collectHeaders(headerKeys, numberOfHeaders);
+//    int httpCode = http.GET();
+//
+//    if (httpCode > 0) {
+//      String headerDate = http.header("date");
+//      String headerTime = headerDate.substring(17, 25);
+//      Serial.printf("Time: ");
+//      Serial.println(headerTime);
+//
+//      display.clear();
+//      drawTime(headerTime);
+//      display.display();
+//    } else {
+//      Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+//    }
+//
+//    http.end();
+//  }
+
+  time_t currentTime = getNtpTime();
   Serial.print("NTP Time: ");
-  Serial.println(getNtpTime());
+  Serial.println(currentTime);
+  setTime(currentTime);
+
+  if (timeStatus() != timeNotSet) {
+    display.clear();
+    drawTime(getFormattedTime());
+    display.display();
+  }
 
   delay(1000);
 }
