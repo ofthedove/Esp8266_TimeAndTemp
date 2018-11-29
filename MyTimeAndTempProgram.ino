@@ -32,6 +32,13 @@ SSD1306Wire  display(0x3c, D3, D5);
 const char * headerKeys[] = {"date"};
 const size_t numberOfHeaders = 1;
 
+void drawConnecting()
+{
+  display.setTextAlignment(TEXT_ALIGN_CENTER);
+  display.setFont(ArialMT_Plain_24);
+  display.drawString(64, 12, "Connecting");
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -40,6 +47,8 @@ void setup() {
   display.init();
   display.flipScreenVertically();
   display.setFont(ArialMT_Plain_10);
+  drawConnecting();
+  display.display();
 
   WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(Ssid, Password);
